@@ -77,6 +77,7 @@ class BaseTranscriptionInterpreter:
         - capricious / couple issues
         - guest / gist
         - green / bring
+        - rubber / wrapper
         - The cut is under day's tail. -> the cat is under the table
         """
         content = actions.edit.selected_text()
