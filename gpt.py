@@ -52,47 +52,55 @@ def gpt_task(prompt: str, content: str, task_name: str) -> str:
         actions.app.notify('GPT: Something went wrong...')
         return None
 
-
     actions.app.notify('GPT: Task ({task_name}) finished')
     return resp
 
 
-class BaseTranscriptionInterpreter:  
+class BaseChatbotTask:
+    def __init__(self):
+        self.prompt = None
+        self.task_name = None
 
+    def ask_chatbot(self):
+            content = actions.edit.selected_text()
+            resp = gpt_task(self.prompt, content, self.task_name)
+
+            if resp:
+                actions.user.paste(resp)
+
+
+class BaseTranscriptionInterpreter(BaseChatbotTask):  
     def __init__(self):
         self.task_name = None
-        self.task_description = None  
+        self.specific_task_description = None  
+        self.generic_transcription_prompt = """
+            I'm using voice recognition software for dictation. 
+            Please interpret the input text by assuming \
+                some words or sequences of words are actually misrecognitions from the ASR. 
+            Pay special attention both to homophones and to expressions that sound similar. 
+            Fix any grammar, punctuation, and typos. 
+            Use a friendly tone and text message style.
+            Some examples:
+            - towards / to words
+            - light / like
+            - capricious / couple issues
+            - guest / gist
+            - green / bring
+            - rubber / wrapper
+            - The cut is under day's tail. -> the cat is under the table
+            """
         
-    def ask_chatbot(self):
-        prompt = """
-        I'm using voice recognition software for dictation. 
-        Please interpret the input text by assuming \
-            some words or sequences of words are actually misrecognitions from the ASR. 
-        Pay special attention both to homophones and to expressions that sound similar. 
-        Fix any grammar, punctuation, and typos. 
-        Use a friendly tone and text message style.
-        Some examples:
-        - towards / to words
-        - light / like
-        - capricious / couple issues
-        - guest / gist
-        - green / bring
-        - rubber / wrapper
-        - The cut is under day's tail. -> the cat is under the table
-        """
-        content = actions.edit.selected_text()
-
-        resp = gpt_task(prompt + self.task_description, content, self.task_name)
-
-        if resp:
-            actions.user.paste(resp)
-
+    @property
+    def prompt(self):
+        return self.generic_transcription_prompt + self.specific_task_description
+        
 
 class TranscriptionGrammarFixer(BaseTranscriptionInterpreter):  
 
     def __init__(self):
+        super().__init__()
         self.task_name = 'grammar_fixer'
-        self.task_description = """
+        self.specific_task_description = """
             Your job is to only return a meaningful interpretation \
                 of the input provided below
             """
@@ -101,20 +109,49 @@ class TranscriptionGrammarFixer(BaseTranscriptionInterpreter):
 class TranscriptionSpanishTranslator(BaseTranscriptionInterpreter):  
 
     def __init__(self):
+        super().__init__()
         self.task_name = 'translate_spanish'
-        self.task_description = """
+        self.specific_task_description = """
             Your job is to only return a meaningful porteño spanish translation \
                 of the input provided below
             """
-
+            
 
 class TranscriptionMailConverter(BaseTranscriptionInterpreter):  
 
     def __init__(self):
+        super().__init__()
         self.task_name = 'mail_converter'
-        self.task_description = """
+        self.specific_task_description = """
             Your job is to Interpret the information provided below \
             and only provide an email based it  
+            """
+
+
+class FrenchTutorialCreator(BaseChatbotTask):
+
+    def __init__(self):
+        self.task_name = 'french_tutorial'
+        self.prompt = """
+            Given the provided french text below your job is to \
+            split it in lines and translate every one of them porteño spanish.
+            Make sure their arrangement follows the next pattern:
+            - french sentence number one.
+            - translated sentence number one.
+            
+            - french sentence number two.
+            - translated sentence number two.
+            
+            For example, if giving the text \
+            "Le chat est sous la table. Le chat est noir." \
+            Then you should write:
+            - Le chat est sous la table.
+            - El gato está bajo la mesa.
+            
+            - Le chat est noir.
+            - El gato es negro.
+
+            Now perform the translation given the following french text:
             """
 
 
@@ -131,3 +168,8 @@ class Actions:
     def convert_to_mail():
         """Convert to mail."""
         TranscriptionMailConverter().ask_chatbot()
+
+    def french_tutorial():
+        """Translate french text to porteño spanish \
+            in a sentence by sentence fashion."""
+        FrenchTutorialCreator().ask_chatbot()

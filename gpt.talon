@@ -12,3 +12,7 @@ translate spanish:
 convert to mail:
   edit.select_all()
   user.convert_to_mail()
+
+french tutorial:
+  edit.select_all()
+  user.french_tutorial()
